@@ -1,0 +1,60 @@
+name: CI Tests
+
+# Runs the test suites that already live in the tree. tests/php holds standalone
+# scripts that exit non-zero on failure; scripts/ZoneMinder/t holds Test::More
+# files. Three of the php tests and all of the perl ones need the generated
+# config.php and ZoneMinder/*.pm, so the job configures the tree with cmake
+# first. It does not build: configure alone produces everything the tests read.
+
+on:
+  push:
+    branches:
+      - '*'
+  pull_request:
+    branches: [ master ]
+
+permissions:
+  contents: read
+
+jobs:
+  tests:
+    name: php and perl tests
+    runs-on: ubuntu-24.04
+
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          submodules: recursive
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            cmake pkg-config php-cli \
+            libavcodec-dev libavformat-dev libavutil-dev libavdevice-dev \
+            libswresample-dev libswscale-dev \
+            default-libmysqlclient-dev \
+            libbz2-dev libcurl4-openssl-dev libjpeg-dev libturbojpeg0-dev \
+            libpcre2-dev libpolkit-gobject-1-dev libssl-dev zlib1g-dev \
+            libv4l-dev libvlc-dev libvncserver-dev \
+            libmosquitto-dev libmosquittopp-dev \
+            gsoap libgsoap-dev
+
+      - name: Configure
+        run: cmake -S . -B build -DBUILD_MAN=0
+
+      - name: PHP tests
+        run: |
+          status=0
+          for t in tests/php/*.php; do
+            if php "$t"; then
+              echo "PASS $t"
+            else
+              echo "FAIL $t"
+              status=1
+            fi
+          done
+          exit $status
+
+      - name: Perl tests
+        run: prove -I build/scripts/ZoneMinder/lib -I scripts/ZoneMinder/lib scripts/ZoneMinder/t
