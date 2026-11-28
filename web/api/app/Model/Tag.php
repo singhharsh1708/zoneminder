@@ -37,7 +37,9 @@ class Tag extends AppModel {
 	public $validate = array(
 		'Name' => array(
 			'notBlank' => array(
-				'rule' => array('notBlank')),
+				'rule' => array('notBlank'),
+				'required' => 'create',
+				'message' => 'A tag needs a name'),
 			'unique' => array(
 				'rule' => array('uniqueIgnoringCase'),
 				'message' => 'A tag with that name already exists')),
