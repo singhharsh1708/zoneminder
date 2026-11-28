@@ -14,6 +14,13 @@ class State extends AppModel {
 	public $useTable = 'States';
 
 /**
+ * Primary key field
+ *
+ * @var string
+ */
+	public $primaryKey = 'Id';
+
+/**
  * Display field
  *
  * @var string
