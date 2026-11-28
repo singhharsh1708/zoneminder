@@ -53,7 +53,7 @@ check('no operator with a list is still IN',
 );
 check('= with a list is still allowed',
   attempt(array('MonitorId =' => array('1', '2'))),
-  array('built' => array(array('MonitorId =' => array('1', '2'))))
+  array('built' => array(array('MonitorId' => array('1', '2'))))
 );
 check('!= with a list is still allowed',
   attempt(array('MonitorId !=' => array('1', '2'))),
