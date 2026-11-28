@@ -7,6 +7,9 @@ App::uses('AppModel', 'Model');
  */
 class Zone extends AppModel {
 
+  // Set by beforeSave(), so a null sent for them is not refused.
+  public $serverSetColumns = array('NumCoords', 'Area');
+
 /**
  * Use table
  *

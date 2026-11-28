@@ -31,16 +31,30 @@ App::uses('Model', 'Model');
  */
 class AppModel extends Model {
 
+  // Columns the model's beforeSave() sets itself, so a null or empty list sent for one is not refused.
+  public $serverSetColumns = array();
+
   // Check numbers, dates, enums and string lengths against the schema so bad input is a validation error, not a 500.
   public function beforeValidate($options = array()) {
     if (empty($this->data[$this->alias])) return true;
     $bits = array('tinyinteger' => 8, 'smallinteger' => 16, 'integer' => 32);
     foreach ($this->schema() as $field => $column) {
-      if (!isset($this->data[$this->alias][$field])) continue;
+      if (!is_array($this->data[$this->alias]) or !array_key_exists($field, $this->data[$this->alias])) continue;
       $value = $this->data[$this->alias][$field];
       if (is_array($value) and $value) {
         // Cake would put the word Array in the insert and MySQL would answer with an unknown column.
         $this->invalidate($field, $field.' must be a single value');
+        continue;
+      }
+      if ($value === null or $value === array()) {
+        // Cake saves null and an empty list as NULL, which a NOT NULL column refuses with a 500.
+        // Cake drops an empty primary key and empty created/modified/updated before the insert, and a
+        // server may fill a NOT NULL timestamp with the current time.
+        if (isset($column['null']) and !$column['null'] and $column['type'] != 'timestamp' and
+            $field != $this->primaryKey and !in_array($field, array('created', 'modified', 'updated')) and
+            !in_array($field, $this->serverSetColumns)) {
+          $this->invalidate($field, $field.' must not be empty');
+        }
         continue;
       }
       if (!is_scalar($value)) continue;

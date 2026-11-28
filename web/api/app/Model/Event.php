@@ -10,6 +10,9 @@ App::uses('AppModel', 'Model');
  */
 class Event extends AppModel {
 
+  // Set by beforeSave(), so a null sent for them is not refused.
+  public $serverSetColumns = array('StateId');
+
 /**
  * Use table
  *

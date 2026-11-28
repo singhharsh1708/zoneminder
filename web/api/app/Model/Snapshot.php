@@ -8,6 +8,9 @@ App::uses('AppModel', 'Model');
  */
 class Snapshot extends AppModel {
 
+  // Set by beforeSave(), so a null sent for them is not refused.
+  public $serverSetColumns = array('CreatedBy', 'CreatedOn');
+
 /**
  * Use table
  *

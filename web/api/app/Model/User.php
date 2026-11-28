@@ -6,6 +6,9 @@ App::uses('AppModel', 'Model');
  */
 class User extends AppModel {
 
+  // Set by beforeSave(), so a null sent for them is not refused.
+  public $serverSetColumns = array('TokenMinExpiry');
+
     public $validate = array(
         'Username' => array(
             'required' => array(
