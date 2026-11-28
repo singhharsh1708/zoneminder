@@ -20,6 +20,10 @@ if (canEdit('Monitors')) {
   $cause = empty($_REQUEST['cause']) ? '' : $_REQUEST['cause'];
   $text = empty($_REQUEST['text']) ? '' : $_REQUEST['text'];
   $showtext = empty($_REQUEST['showtext']) ? '' : $_REQUEST['showtext'];
+  if (!is_scalar($cause) or !is_scalar($text) or !is_scalar($showtext)) {
+    ajaxError('cause, text and showtext must be single values');
+    return;
+  }
 
   if ($action == 'show') {
   } else if ($action == 'enable') {
