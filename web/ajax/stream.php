@@ -75,8 +75,12 @@ $localSocketFile = $bindFile;
 
 switch ($_REQUEST['command']) {
 case CMD_VARPLAY :
-  ZM\Debug('Varplaying to '.$_REQUEST['rate']);
-  $msg = pack('lcn', MSG_CMD, $_REQUEST['command'], $_REQUEST['rate']+32768);
+  $rate = $_REQUEST['rate'] ?? 0;
+  if (!is_numeric($rate)) {
+    ajaxError('Invalid rate for VARPLAY', HTTP_STATUS_OK, STREAM_ERR_INVALID);
+  }
+  ZM\Debug('Varplaying to '.$rate);
+  $msg = pack('lcn', MSG_CMD, $_REQUEST['command'], $rate+32768);
   break;
 case CMD_ZOOMIN :
   ZM\Debug('Zooming to '.$_REQUEST['x'].','.$_REQUEST['y']);
