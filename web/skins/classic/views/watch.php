@@ -48,7 +48,7 @@ $heights = array(
 );
 
 // This is for input sanitation
-$mid = isset($_REQUEST['mid']) ? intval($_REQUEST['mid']) : 0;
+$mid = (isset($_REQUEST['mid']) and is_scalar($_REQUEST['mid'])) ? intval($_REQUEST['mid']) : 0;
 $monitors = array();
 $monitor_index = -1;
 foreach ($displayMonitors as &$row) {
