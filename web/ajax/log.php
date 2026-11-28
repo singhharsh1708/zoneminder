@@ -28,10 +28,15 @@ if (!isset($_REQUEST['task'])) {
     $message = 'Insufficient permissions to delete log entries for user '.validHtmlStr($user->Username());
   } else {
     if (!empty($_REQUEST['ids'])) {
-      $ids = array_map('intval', (array)$_REQUEST['ids']);
-      $placeholders = implode(',', array_fill(0, count($ids), '?'));
-      if (dbQuery('DELETE FROM Logs WHERE Id IN (' . $placeholders . ')', $ids) === null) {
-        $message = 'Failed to delete the selected log entries';
+      // intval() of a nested list is 1, which would delete log row 1.
+      $ids = array_map('intval', array_filter((array)$_REQUEST['ids'], 'is_scalar'));
+      if (!count($ids)) {
+        $message = 'No valid log entry ids were given';
+      } else {
+        $placeholders = implode(',', array_fill(0, count($ids), '?'));
+        if (dbQuery('DELETE FROM Logs WHERE Id IN (' . $placeholders . ')', array_values($ids)) === null) {
+          $message = 'Failed to delete the selected log entries';
+        }
       }
     } else if (!empty($_REQUEST['all'])) {
       // Deleting by id needs one request per 100 rows, which is unusable at the
