@@ -536,7 +536,7 @@ class EventsController extends AppController {
 
     foreach ($this->params['named'] as $param_name => $value) {
       // Transform params into conditions
-      if ( preg_match('/^\s?interval\s?/i', $value) ) {
+      if ( is_string($value) and preg_match('/^\s?interval\s?/i', $value) ) {
         if (preg_match('/^[a-z0-9]+$/i', $param_name) !== 1) {
           throw new BadRequestException('Invalid field name: ' . $param_name);
         }
