@@ -64,10 +64,16 @@ class EventsController extends AppController {
     # containment test, which drops every event that spans the end of the
     # window -- with continuous recording that is most of them.
     $datetime_terms = array();
-    foreach ($conditions as $k=>$v) {
-      if ( 0 === strpos($k, 'DateTime') ) {
+    foreach ($conditions as $i=>$v) {
+      $k = $i;
+      # buildFilter() writes a list as array('DateTime' => list) under a numeric key.
+      if ( is_int($i) and is_array($v) and count($v) == 1 ) {
+        $k = key($v);
+        $v = current($v);
+      }
+      if ( is_string($k) and 0 === strpos($k, 'DateTime') ) {
         $datetime_terms[$k] = $v;
-        unset($conditions[$k]);
+        unset($conditions[$i]);
       }
     }
     if ($datetime_terms) {
@@ -201,6 +207,20 @@ class EventsController extends AppController {
       }
       return false;
     };
+    # Tags.Id likewise: the key carries the operator, and a list sits under a numeric key. Asked
+    # before the Tag and TagId filters add their own Tags.Id condition and joins.
+    $references_tags = function($conds) use (&$references_tags) {
+      foreach ($conds as $key => $value) {
+        if (is_string($key) and preg_match('/^Tags\.Id(\s|$)/', $key)) {
+          return true;
+        }
+        if (is_array($value) and $references_tags($value)) {
+          return true;
+        }
+      }
+      return false;
+    };
+    $filters_tags_id = $references_tags($conditions);
     if ($references_group($conditions)) {
       $settings['joins'] = array(
         array(
@@ -241,7 +261,7 @@ class EventsController extends AppController {
       }
       $settings['group'] = 'Event.Id';
     }
-    if (isset($conditions['Tags.Id'])) {
+    if ($filters_tags_id and $tag_filter_value === null) {
       $settings['joins'][] = [
         'table' => 'Events_Tags',
         'type'  => 'inner',
