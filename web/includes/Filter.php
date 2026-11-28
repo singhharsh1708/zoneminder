@@ -288,7 +288,8 @@ class Filter extends ZM_Object {
 
   public function Query_json() {
     if ( func_num_args( ) ) {
-      $this->{'Query_json'} = func_get_arg(0);
+      $json = func_get_arg(0);
+      $this->{'Query_json'} = is_string($json) ? $json : '';
       $this->{'Query'} = empty($this->{'Query_json'}) ? [] : jsonDecode($this->{'Query_json'});
     }
     return $this->{'Query_json'};
@@ -300,7 +301,7 @@ class Filter extends ZM_Object {
       if ( is_array($Query) and isset($Query['terms']) and is_array($Query['terms']) ) {
         foreach ( $Query['terms'] as $k => $term ) {
           if ( is_array($term) and isset($term['val']) and is_array($term['val']) ) {
-            $Query['terms'][$k]['val'] = implode(',', $term['val']);
+            $Query['terms'][$k]['val'] = implode(',', array_filter($term['val'], 'is_scalar'));
           }
         }
       }
@@ -353,7 +354,18 @@ class Filter extends ZM_Object {
     if ( !is_array($terms) ) {
       return array();
     }
-    return array_values(array_filter($terms, 'is_array'));
+    $terms = array_values(array_filter($terms, 'is_array'));
+    // A list given for a single-valued field (term[cnj][]=and) is not a value any reader of a term can use.
+    foreach ($terms as &$term) {
+      if (isset($term['val']) and is_array($term['val'])) $term['val'] = implode(',', array_filter($term['val'], 'is_scalar'));
+      if (isset($term['attr']) and !is_scalar($term['attr'])) $term['attr'] = '';
+      if (isset($term['op']) and !is_scalar($term['op'])) $term['op'] = '=';
+      foreach (array('cnj', 'obr', 'cbr', 'tablename', 'collate') as $field) {
+        if (isset($term[$field]) and !is_scalar($term[$field])) unset($term[$field]);
+      }
+    }
+    unset($term);
+    return $terms;
   }
 
   /**
@@ -391,7 +403,7 @@ class Filter extends ZM_Object {
       if (self::isValidSortExpression($sf)) {
         return $sf;
       }
-      Warning('Ignoring malformed Filter sort_field "'.$sf.'"');
+      Warning('Ignoring malformed Filter sort_field "'.(is_scalar($sf) ? $sf : gettype($sf)).'"');
     }
     return ZM_WEB_EVENT_SORT_FIELD;
     #return $this->defaults{'sort_field'};
@@ -403,7 +415,7 @@ class Filter extends ZM_Object {
       $Query['sort_asc'] = func_get_arg(0);
       $this->Query($Query);
     }
-    if (isset($this->Query()['sort_asc'])) {
+    if (isset($this->Query()['sort_asc']) and is_scalar($this->Query()['sort_asc'])) {
       return $this->{'Query'}['sort_asc'];
     }
     return ZM_WEB_EVENT_SORT_ORDER == 'asc' ? 1 : 0;
@@ -416,7 +428,7 @@ class Filter extends ZM_Object {
       $Query['skip_locked'] = func_get_arg(0);
       $this->Query($Query);
     }
-    if (isset($this->Query()['skip_locked']))
+    if (isset($this->Query()['skip_locked']) and is_scalar($this->Query()['skip_locked']))
       return $this->{'Query'}['skip_locked'];
     return false;
   }
