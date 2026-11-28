@@ -42,7 +42,7 @@ if ( $action == 'save' ) {
     return;
   }
 
-  $new_ids = isset($_REQUEST['newGroup']['MonitorIds']) ? array_map('intval', (array)$_REQUEST['newGroup']['MonitorIds']) : array();
+  $new_ids = isset($_REQUEST['newGroup']['MonitorIds']) ? array_map('intval', array_filter((array)$_REQUEST['newGroup']['MonitorIds'], 'is_scalar')) : array();
   $old_ids = $group->Id() ? dbFetchAll('SELECT `MonitorId` FROM `Groups_Monitors` WHERE `GroupId`=?', 'MonitorId', array($group->Id())) : array();
   $moved = array_merge(array_diff($old_ids, $new_ids), array_diff($new_ids, $old_ids));
   $new_parent = (($_REQUEST['newGroup']['ParentId'] ?? '') == '' ? null : $_REQUEST['newGroup']['ParentId']);
