@@ -355,8 +355,8 @@ function collectData() {
   }
 
   foreach ( $_REQUEST['element'] as $element ) {
-    if ( !($elementData = $lc_elements[strtolower($element)]) ) {
-      ajaxError('Bad '.validJsStr($_REQUEST['entity']).' element '.$element);
+    if ( !is_string($element) or !($elementData = $lc_elements[strtolower($element)] ?? null) ) {
+      ajaxError('Bad '.validJsStr($_REQUEST['entity']).' element '.(is_string($element) ? $element : ''));
       continue;
     }
     if (isset($elementData['func'])) {
