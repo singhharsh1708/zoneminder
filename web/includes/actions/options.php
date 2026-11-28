@@ -279,7 +279,7 @@ if ( $action == 'delete' ) {
       if (!isset($_REQUEST['items'][$id])) continue;
       $enabled = isset($_REQUEST['items'][$id]['Enabled']) ? 1 : 0;
       $label = isset($_REQUEST['items'][$id]['Label']) && is_string($_REQUEST['items'][$id]['Label']) ? trim($_REQUEST['items'][$id]['Label']) : null;
-      $sortOrder = isset($_REQUEST['items'][$id]['SortOrder']) ? intval($_REQUEST['items'][$id]['SortOrder']) : $item->SortOrder();
+      $sortOrder = isset($_REQUEST['items'][$id]['SortOrder']) && is_scalar($_REQUEST['items'][$id]['SortOrder']) ? intval($_REQUEST['items'][$id]['SortOrder']) : $item->SortOrder();
       if ($label === '') $label = null;
 
       $iconType = isset($_REQUEST['items'][$id]['IconType']) && is_string($_REQUEST['items'][$id]['IconType']) ? $_REQUEST['items'][$id]['IconType'] : $item->IconType();
@@ -317,7 +317,7 @@ if ( $action == 'delete' ) {
         $enabled = isset($new['Enabled']) ? 1 : 0;
         $label = isset($new['Label']) ? trim($new['Label']) : null;
         if ($label === '') $label = null;
-        $sortOrder = isset($new['SortOrder']) ? intval($new['SortOrder']) : 0;
+        $sortOrder = isset($new['SortOrder']) && is_scalar($new['SortOrder']) ? intval($new['SortOrder']) : 0;
 
         $iconType = isset($new['IconType']) ? $new['IconType'] : 'material';
         if (!in_array($iconType, ['material', 'fontawesome', 'image', 'none'])) $iconType = 'material';
@@ -349,7 +349,7 @@ if ( $action == 'delete' ) {
   if (!canEdit('System')) {
     ZM\Warning('Need System permission to delete menu items');
   } else if (!empty($_REQUEST['deleteIds']) && is_array($_REQUEST['deleteIds'])) {
-    $ids = array_values(array_filter(array_map('intval', $_REQUEST['deleteIds']), function($v) { return $v > 0; }));
+    $ids = array_values(array_filter(array_map('intval', array_filter($_REQUEST['deleteIds'], 'is_scalar')), function($v) { return $v > 0; }));
     if (count($ids)) {
       $placeholders = implode(',', array_fill(0, count($ids), '?'));
       if (dbQuery('DELETE FROM `Menu_Items` WHERE `Id` IN ('.$placeholders.')', $ids) === null) {
