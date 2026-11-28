@@ -19,7 +19,15 @@ eval('namespace ZM {
 }');
 function canEdit($area) { return true; }
 function getFormChanges($old, $new, &$types) { return array("Name='COCO'"); }
-function dbFetchOne($sql, $cache = NULL, $args = array()) { return array(); }
+// ai_class.php asks for the next free index and for a class already using an index
+// (false when there is none); anything else is a row lookup.
+function dbFetchOne($sql, $col = NULL, $args = array()) {
+  if ($col == 'NextIndex') return 0;
+  if ($col == 'ClassName') return $GLOBALS['taken'] ?? false;
+  return array();
+}
+function validCardinal($v) { return is_scalar($v) ? (int)$v : 0; }
+function daemonCheck() { return false; }
 function dbQuery($sql, $args = array()) { return $GLOBALS['db_ok'] ? true : null; }
 function dbLastError() { return "Duplicate entry '<b>COCO</b>' for key 'Name'"; }
 function translate($k) { return $k; }

@@ -24,7 +24,15 @@ eval('namespace ZM {
 }');
 function canEdit($area) { return true; }
 function getFormChanges($old, $new, &$types) { return array("Name='COCO'"); }
-function dbFetchOne($sql, $cache = NULL, $args = array()) { return array(); }
+// ai_class.php asks for the next free index and for a class already using an index
+// (false when there is none); anything else is a row lookup.
+function dbFetchOne($sql, $col = NULL, $args = array()) {
+  if ($col == 'NextIndex') return 7;
+  if ($col == 'ClassName') return $GLOBALS['taken'] ?? false;
+  return array();
+}
+function validCardinal($v) { return is_scalar($v) ? (int)$v : 0; }
+function daemonCheck() { return false; }
 function dbQuery($sql, $args = array()) { return $GLOBALS['db_ok'] ? true : null; }
 function dbLastError() { return "Duplicate entry '<b>COCO</b>' for key 'Name'"; }
 function translate($k) { return $k; }
@@ -91,6 +99,16 @@ foreach ($cases as $case) {
   check('refreshParent is true', $s['refreshParent'] === true);
   check('raises no warnings', count($s['problems']) == 0);
 }
+
+echo "ai_class.php index:\n";
+$GLOBALS['taken'] = 'person';
+$s = run_action('ai_class.php', 'save', array('newClass' => array('DatasetId' => '1', 'ClassName' => 'x', 'ClassIndex' => '0')), true);
+check('refuses an index another class of the dataset uses', strpos($s['error_message'], 'ClassIndexInUse') !== false);
+check('neither redirects nor refreshes', $s['redirect'] === null && $s['refreshParent'] !== true);
+unset($GLOBALS['taken']);
+$s = run_action('ai_class.php', 'save', array('newClass' => array('DatasetId' => '1', 'ClassName' => 'x')), true);
+check('a new class without an index takes the next free one', $_REQUEST['newClass']['ClassIndex'] === 7);
+check('and saves', $s['error_message'] === '' && $s['refreshParent'] === true);
 
 echo "\n$tests tests, $failures failures\n";
 exit($failures ? 1 : 0);
