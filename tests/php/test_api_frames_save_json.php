@@ -46,18 +46,20 @@ class FakeEvent {
 
 class FakeFrame {
   public $saveResult = true;
+  public $valid = true;
+  public $updated = false;
   public $validationErrors = array();
   public $Event;
   private $source;
   function __construct() { $this->Event = new FakeEvent(); $this->source = new FakeSource(); }
   function set($columns) {}
   function validates() {
-    if (!$this->saveResult) $this->validationErrors = array('Score' => array('invalid'));
-    return $this->saveResult;
+    if (!$this->valid) $this->validationErrors = array('Score' => array('invalid'));
+    return $this->valid;
   }
   function getDataSource() { return $this->source; }
   function getColumnType($field) { return 'integer'; }
-  function updateAll($fields, $conditions) { return $this->saveResult; }
+  function updateAll($fields, $conditions) { $this->updated = true; return $this->saveResult; }
 }
 
 function extract_method($source, $name) {
@@ -88,13 +90,14 @@ eval('class FramesHarness { public $request, $response, $Frame, $vars = array(),
   function requestColumns($exclude = array()) { return array_diff_key($this->columns, array_flip($exclude)); }
   '.$add.' '.$edit.' }');
 
-function run($action, $method, $save_result, $columns = array('EventId' => 5, 'FrameId' => 3, 'Score' => 10)) {
+function run($action, $method, $save_result, $columns = array('EventId' => 5, 'FrameId' => 3, 'Score' => 10), $valid = null) {
   global $user;
   $user = null;
   $h = new FramesHarness();
   $h->request = new FakeRequest($method, array('Frame' => $columns)); $h->response = new FakeResponse;
   $h->Frame = new FakeFrame();
   $h->Frame->saveResult = $save_result;
+  $h->Frame->valid = $valid === null ? $save_result : $valid;
   $h->columns = $columns;
   try {
     if ($action == 'add') $h->add(); else $h->edit(5, 3);
@@ -117,9 +120,18 @@ check('add: GET is a BadRequestException', $r, 'BadRequestException');
 list($r, $h) = run('edit', 'PUT', true);
 check('edit: PUT save answers Saved', isset($h->vars['message']) ? $h->vars['message'] : null, 'Saved');
 check('edit: PUT save does not flash an HTML page', $h->flashed, array());
-list($r, $h) = run('edit', 'PUT', false);
+list($r, $h) = run('edit', 'PUT', false, array('EventId' => 5, 'FrameId' => 3, 'Score' => 10), true);
 check('edit: failed save answers Error', isset($h->vars['message']) ? $h->vars['message'] : null, 'Error');
 check('edit: failed save serializes message', isset($h->vars['_serialize']) ? $h->vars['_serialize'] : null, array('message'));
+// updateAll() does not validate, so a Type or TimeStamp the column refuses was a 500.
+list($r, $h) = run('edit', 'PUT', true, array('EventId' => 5, 'FrameId' => 3, 'Score' => 'x'), false);
+check('edit: a value that fails validation answers the errors', isset($h->vars['message']) ? $h->vars['message'] : null, array('Score' => array('invalid')));
+check('edit: a value that fails validation is a 400', $h->response->status, 400);
+check('edit: a value that fails validation is not written', $h->Frame->updated, false);
+check('edit: a value that fails validation serializes message', isset($h->vars['_serialize']) ? $h->vars['_serialize'] : null, array('message'));
+list($r, $h) = run('edit', 'PUT', true);
+check('edit: a valid value is written', $h->Frame->updated, true);
+check('edit: a valid value is a 200', $h->response->status, 200);
 list($r, $h) = run('edit', 'PUT', true, array('EventId' => 5, 'FrameId' => 3));
 check('edit: PUT with only key fields says nothing was saved', isset($h->vars['message']) ? $h->vars['message'] : null, 'No fields to save');
 list($r, $h) = run('edit', 'GET', true);

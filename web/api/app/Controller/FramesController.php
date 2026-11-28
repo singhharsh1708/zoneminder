@@ -197,10 +197,21 @@ class FramesController extends AppController {
 	public function edit($eventId = null, $frameId = null) {
 		$this->requireFrameEdit($eventId, $frameId);
 		if ($this->request->is(array('post', 'put'))) {
+			# updateAll() does not validate, so a Type or TimeStamp the column refuses would be a 500.
+			$values = $this->requestColumns(array('EventId', 'FrameId'));
+			$this->Frame->set($values);
+			if (!$this->Frame->validates()) {
+				$this->response->statusCode(400);
+				$this->set(array(
+					'message' => $this->Frame->validationErrors,
+					'_serialize' => array('message')
+				));
+				return;
+			}
 			# updateAll() takes SQL expressions, so the values must be quoted here.
 			$db = $this->Frame->getDataSource();
 			$columns = array();
-			foreach ($this->requestColumns(array('EventId', 'FrameId')) as $field => $value) {
+			foreach ($values as $field => $value) {
 				$columns[$field] = $db->value($value, $this->Frame->getColumnType($field));
 			}
 			if (count($columns) and $this->Frame->updateAll($columns,
