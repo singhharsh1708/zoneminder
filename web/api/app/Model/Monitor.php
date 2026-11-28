@@ -152,7 +152,8 @@ class Monitor extends AppModel {
 
   public function validDevicePath($check) {
     $value = reset($check);
-    if ($value === null || $value === '') {
+    // AppModel::beforeValidate() refuses a list.
+    if ($value === null || $value === '' || is_array($value)) {
       return true;
     }
     $type = isset($this->data['Monitor']['Type']) ? $this->data['Monitor']['Type'] : ($this->id ? $this->field('Type') : null);
